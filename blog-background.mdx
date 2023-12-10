@@ -1,0 +1,62 @@
+---
+title: 'Algorithmic Aesthetics: Dynamic Triangulated Backgrounds'
+description: 'Discover the intricate dance of algorithmic creativity in this blog, where Delaunay triangulation and dynamic color transitions come together to forge a captivating, ever-changing background.'
+date: '2023-12-9'
+modified: '2023-12-9'
+tags: ['Artwork', 'Blog', 'Frontend']
+---
+Digital artistry reaches new heights when powered by algorithmic processes. The mesmerizing background you're observing is a product of technical ingenuity, where each triangle is meticulously placed and colored to create a sense of depth and movement. Let's delve into the technical details that make up the canvas of shifting triangles.
+
+### Delaunay Triangulation: The Geometric Foundation
+
+The backbone of this algorithmic tapestry is Delaunay triangulation. This process begins with the creation of a point grid. However, these points are not rigidly fixed; they are imbued with a touch of randomness to provide natural variance.
+
+```javascript
+const cellJitter = cellSize * variance;
+const getJitter = () => (random() - 0.5) * cellJitter;
+```
+
+Each point is nudged slightly off its grid intersection, ensuring that the resulting triangles appear more varied and less structured. The `Delaunator` library takes these points and weaves them into a network of triangles, ensuring that the final arrangement is a seamless, non-overlapping mosaic.
+
+### A Palette of Phased Colors
+
+In this algorithmic composition, color plays a pivotal role, not just in appearance but in its temporal evolution. The `getColor` function orchestrates this evolution by assigning each group of triangles a starting phase in the color transition cycle, based on their `color_group_index`. This index, when combined with the `color_count`, ensures each group begins its color journey from a distinct phase, creating a staggered, harmonious spectrum of change across the canvas.
+
+```javascript
+const getColor = (color_group_index: number) => {
+  // ...code to calculate the color based on group index and progress...
+};
+```
+
+As time flows, so does the color—each group of triangles transitions through hues in a loop, their starting points dictated by their group index. This mechanism ensures that the background is not just a static array of colors, but a dynamic display that shifts with a sense of rhythm and life.
+
+### Animation: The Pulse of the Canvas
+
+Animating these colors requires smooth transitions, achieved through the use of `@react-spring/web`. This library animates the progress variable, which in turn affects the color range, creating the illusion of a living, breathing background.
+
+```javascript
+const { progress } = useSpring({
+  from: { progress: 0 },
+  config: { duration: 3000 },
+  loop: { progress: 1, reset: true },
+});
+```
+
+The `progress` variable oscillates from 0 to 1 and back, within a time frame defined by the duration. This looping animation is the heartbeat of our color transitions, ensuring that each triangle's color pulses and shifts in a never-ending cycle.
+
+### Seamless Transition: Harmonizing Light and Dark
+
+The transition between light and dark modes is rendered seamless through the intelligent application of reactive color values. By harnessing the `useDarkMode` hook, the code actively listens for changes in the user's theme preferences. The `darkModeControl` variable, a spring value, creates a fluid transition between modes, rather than a jarring switch, by interpolating the colors used for the background triangles.
+
+```javascript
+const darkModeControl = useSpringValue(+isDarkMode);
+useEffect(() => {
+  darkModeControl.start(+isDarkMode);
+}, [darkModeControl, isDarkMode]);
+```
+
+This section of the code ensures that as the user toggles between dark and light modes, the background's color palette shifts smoothly, thanks to the reactive spring animation that gradually interpolates between a light gray and a deep navy. The use of `Color` objects to define the range of colors facilitates a smooth gradient transition, providing an aesthetically pleasing experience that's easy on the eyes regardless of the user's display setting.
+
+## Conclusion
+
+The dynamic background you see is a symphony of algorithmic precision and artistic expression. Delaunay triangulation gives structure, randomness introduces naturalism, and progressive coloration breathes life into the canvas. This algorithmic design isn't just a static decoration; it's an evolving element of the user interface, providing a continuously engaging visual experience. Through the interplay of mathematical algorithms and creative coding, this background becomes a silent yet compelling narrator of the digital space it inhabits.
