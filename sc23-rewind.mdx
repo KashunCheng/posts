@@ -1,0 +1,80 @@
+---
+title: 'ShanghaiTech at SCC23: Our Contest Experiences and Challenges'
+description: "Explore ShanghaiTech University's GeekPie_HPC team's exhilarating journey at SCC23, highlighting technical challenges, teamwork, and key learnings in supercomputing."
+date: '2023-11-30'
+modified: '2023-11-30'
+tags: ['HPC']
+---
+## Introduction
+
+In November 2023, ShanghaiTech University's [GeekPie_HPC](https://hpc.geekpie.club) team participated in the SCC23 supercomputing competition in Denver, Colorado.
+This event offered a platform for intense learning and collaboration in high-performance computing (HPC).
+
+## An Unexpected Turn on Day One
+At the SCC 23, we embarked on an intensive and educational journey.
+One of the most intriguing stories unfolded on the very first day of the contest.
+Our team was required to run benchmarks, and two of the benchmarks were HPL and HPCG.
+We decided to run the GPU versions for them to achieve superior performance.
+However, we overlooked the hardware setup.
+As we were engrossed in finalizing the software setup, an unexpected challenge arose – one of our nodes was disconnected due to the problematic hardware.
+
+Just three hours before the deadline, we finally realized that it was the two 4090 GPUs on the one node that made the node won't boot.
+We made a strategic decision to abandon this node for HPL and HPCG.
+To compound the issue, the team member responsible for the HPL and HPCG benchmarks had not prepared adequately, leading to a time-consuming online search for solutions.
+Recognizing the gravity of the situation, I stepped in to handle these benchmarks, drawing on my previous experience.
+With the clock ticking, I deployed a container utilizing a precompiled image from NVIDIA, managing to complete the benchmarks just in time.
+(We don't even have time to compile and install HPL and HPCG from source. In addition, a valid HPCG run must last more than 30 minutes).
+
+### How we run HPL and HPCG in 3 hours
+We utilized [Singularity](https://docs.sylabs.io/guides/2.6/user-guide/singularity_and_docker.html) containers to run HPL and HPCG.
+However, we were only able to run the [21.4 version](https://web.archive.org/web/20230327082554/https://catalog.ngc.nvidia.com/orgs/nvidia/containers/hpc-benchmarks) of the container.
+
+Here is an example of running HPCG (with CUDA acceleration) on the single node.
+```bash
+singularity pull hpc-benchmarks:21.4-hpcg.sif nvcr.io/nvidia/hpc-benchmarks:21.4-hpcg
+# set np to 3 because we have 3 gpus on one node
+singularity run --nv /home/geekpie/hpc-benchmarks\:21.4-hpcg.sif mpirun -np 3 --bind-to none /workspace/hpcg.sh --dat /home/geekpie/hpcg.dat --cpu-affinity 0-31:32-63:64-95 --cpu-cores-per-rank 32 --gpu-affinity 0:1:2
+```
+
+### Lessons Learned
+
+This experience taught us the paramount importance of thorough preparation in both hardware and software before any contest.
+Ensuring hardware functionality and familiarity with software operation is essential.
+It is also advantageous to run all benchmarks at least once before the actual contest.
+In future competitions, an onboarding process for new team members and a standard preparation routine could be highly beneficial.
+
+## Overcoming the 3DMHD Challenge
+
+> The following parts are the summary of my [3dmhd report](https://github.com/KashunCheng/Rast-3dmhd-flux/blob/writeup/README.md)
+
+Another significant task I undertook was optimizing the 3DMHD, a numerical simulation crucial for understanding plume dynamics in stars.
+The program, written in Fortran with MPI, presented its own set of challenges.
+
+### Optimization Methodology
+
+The main iteration loop in `3dmhd.f` required careful analysis and optimization.
+Profiling revealed that the `FLUXES` subroutine consumed about 70% of CPU time.
+Initially, I considered only offloading this subroutine to GPU, but the associated data movement proved inefficient.
+
+#### Approach to Optimization
+
+I opted for a static analysis approach using a **parser**.
+This allowed for a clear understanding of the data movement needs and the subroutines involved in the main iteration loop.
+
+### Project Implementation
+
+1. **Handling MPI Calls Data Movement**: Using a python library called `fparser`, I analyzed the program to identify essential data movement for GPU optimization.
+2. **Identifying Involved Subroutines and Variables**: A recursive Python function helped identify the subroutines called within the main loop. Then, using `ANTLR`, I analyzed the assignment statements to determine which variables needed to be moved to the GPU.
+3. **Deciding Variables for GPU**: Shared arrays in the `COMMON` block were moved to the GPU, while local arrays were manually inspected for placement.
+4. **Parallelizing Loops**: Pure loops were identified and parallelized using the `openacc kernel` directive, with kernels being fused for efficiency.
+5. **Validating Memory Access**: A function was written to track illegal data movements and ensure that all statements accessed valid memory.
+
+### Speedup and Debugging
+
+The optimizations resulted in a significant speedup of 10x-20x on our hardware setup, comprising Epyc 7742 CPUs and NVIDIA V100 GPUs.
+
+## Conclusion
+
+Participating in SCC 23 was an enriching and challenging experience.
+It highlighted the necessity of thorough preparation and the power of effective problem-solving and optimization strategies.
+The lessons learned and the knowledge gained will undoubtedly be invaluable in our future endeavors in the field of computational science.
